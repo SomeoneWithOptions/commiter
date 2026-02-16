@@ -16,6 +16,20 @@ This file provides context and instructions for AI agents working on the `commit
 - **Single Test:** `go test -run TestName ./...`
 - **Current State:** The project currently lacks test files. New features should include unit tests in `*_test.go` files using the standard `testing` package.
 
+## Security & Performance
+This is a **public** repository. All code and contributions are visible to the world.
+
+### Security Best Practices
+- **Secrets:** NEVER commit or hardcode secrets (API keys, tokens). Always use environment variables (e.g., `OPENROUTER_API_KEY`).
+- **Input Validation:** Validate all inputs, especially those used in shell commands or API calls to prevent injection attacks.
+- **Dependencies:** Scrutinize third-party libraries. Stick to the standard library when possible to reduce attack surface.
+- **Logging:** Ensure no sensitive data is logged to stdout/stderr or included in generated commit messages.
+
+### Performance Guidelines
+- **Efficiency:** Minimize expensive operations like network calls and disk I/O.
+- **Concurrency:** Leverage Go's concurrency primitives (goroutines, channels) for parallel tasks, but avoid race conditions.
+- **Resources:** Ensure proper cleanup of resources (e.g., `defer body.Close()`) to prevent leaks.
+
 ## Code Style & Conventions
 
 ### Formatting
@@ -41,3 +55,4 @@ This file provides context and instructions for AI agents working on the `commit
 2.  **Plan:** Describe the changes.
 3.  **Modify:** Use `edit` or `write` to update code.
 4.  **Verify:** Run `go fmt ./...` and `go vet ./...` to ensure code quality.
+5.  **Documentation:** Update relevant documentation (e.g., `README.md`, comments) if the changes affect usage, configuration, or architecture.
