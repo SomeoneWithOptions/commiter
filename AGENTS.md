@@ -14,7 +14,7 @@ This file provides context and instructions for AI agents working on the `commit
 ## Testing
 - **Command:** `go test ./...`
 - **Single Test:** `go test -run TestName ./...`
-- **Current State:** The project currently lacks test files. New features should include unit tests in `*_test.go` files using the standard `testing` package.
+- **Current State:** The project includes unit tests in `*_test.go` files using the standard `testing` package. New features should include unit tests.
 
 ## Security & Performance
 This is a **public** repository. All code and contributions are visible to the world.
