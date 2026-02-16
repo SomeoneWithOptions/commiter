@@ -8,6 +8,6 @@ Rules:
 - Use one of: feat, fix, docs, style, refactor, perf, test, build, ci, chore
 - Format: <type>(<optional scope>): <description>
 - Description must be lowercase, imperative mood, no period at the end
-- Maximum 72 characters total
+- Maximum 100 characters total
 - Output ONLY the commit message, nothing else`
 }

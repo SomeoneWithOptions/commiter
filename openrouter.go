@@ -28,7 +28,7 @@ func generateCommitMessage(diff string, model string) (string, error) {
 			{"role": "user", "content": diff},
 		},
 		"temperature": 0.3,
-		"max_tokens":  1000,
+		"max_tokens":  2000,
 	}
 
 	jsonBody, err := json.Marshal(requestBody)
