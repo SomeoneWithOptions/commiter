@@ -18,31 +18,42 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Staging all changes...")
+	spinner := NewSpinner("Staging all changes...")
+	spinner.Start()
+
 	if err := stageAll(); err != nil {
+		spinner.Stop()
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
 	diff, err := getStagedDiff()
 	if err != nil {
+		spinner.Stop()
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("Generating commit message...")
+	spinner.UpdateMessage("Generating commit message...")
 	message, err := generateCommitMessage(diff, model)
 	if err != nil {
+		spinner.Stop()
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
+	spinner.Stop()
 	fmt.Println(message)
 
+	spinner = NewSpinner("Committing...")
+	spinner.Start()
+
 	if err := commit(message); err != nil {
+		spinner.Stop()
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
+	spinner.Stop()
 	fmt.Println("Committed successfully.")
 }
