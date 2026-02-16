@@ -6,8 +6,10 @@ import (
 	"strings"
 )
 
+var execCommand = exec.Command
+
 func isGitRepo() error {
-	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
+	cmd := execCommand("git", "rev-parse", "--is-inside-work-tree")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return errorf("not a git repository: %s", strings.TrimSpace(string(output)))
@@ -16,7 +18,7 @@ func isGitRepo() error {
 }
 
 func stageAll() error {
-	cmd := exec.Command("git", "add", "-A")
+	cmd := execCommand("git", "add", "-A")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return errorf("failed to stage changes: %s", strings.TrimSpace(string(output)))
@@ -25,7 +27,7 @@ func stageAll() error {
 }
 
 func getStagedDiff() (string, error) {
-	cmd := exec.Command("git", "diff", "--cached")
+	cmd := execCommand("git", "diff", "--cached")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", errorf("failed to get diff: %s", strings.TrimSpace(string(output)))
@@ -38,10 +40,19 @@ func getStagedDiff() (string, error) {
 }
 
 func commit(message string) error {
-	cmd := exec.Command("git", "commit", "-m", message)
+	cmd := execCommand("git", "commit", "-m", message)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return errorf("failed to commit: %s", strings.TrimSpace(string(output)))
+	}
+	return nil
+}
+
+func push() error {
+	cmd := execCommand("git", "push")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return errorf("failed to push: %s", strings.TrimSpace(string(output)))
 	}
 	return nil
 }
