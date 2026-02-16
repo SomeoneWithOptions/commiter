@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -76,10 +77,32 @@ func generateCommitMessage(diff string, model string) (string, error) {
 		return "", fmt.Errorf("API returned empty choices")
 	}
 
-	message := strings.TrimSpace(response.Choices[0].Message.Content)
+	message := cleanCommitMessage(response.Choices[0].Message.Content)
 	if message == "" {
 		return "", fmt.Errorf("API returned empty commit message - raw response: %s", string(bodyBytes))
 	}
 
 	return message, nil
+}
+
+func cleanCommitMessage(msg string) string {
+	// Trim whitespace
+	msg = strings.TrimSpace(msg)
+
+	// To lower case
+	msg = strings.ToLower(msg)
+
+	// Remove trailing dot
+	msg = strings.TrimSuffix(msg, ".")
+
+	// Remove common conventional commit prefixes if present (e.g., "feat: ", "fix(ui): ")
+	// This regex matches "word", optionally "word(scope)", followed by ": "
+	re := regexp.MustCompile(`^[a-z]+(\([a-z0-9-]+\))?:\s+`)
+	msg = re.ReplaceAllString(msg, "")
+
+	// Normalize spaces (replace multiple spaces with single space)
+	reSpaces := regexp.MustCompile(`\s+`)
+	msg = reSpaces.ReplaceAllString(msg, " ")
+
+	return strings.TrimSpace(msg)
 }

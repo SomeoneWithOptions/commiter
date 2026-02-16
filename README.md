@@ -1,6 +1,6 @@
 # commiter
 
-A Go CLI tool that automates the git commit process. It stages all changes, generates a Conventional Commits message using the OpenRouter API, and commits the changes.
+A Go CLI tool that automates the git commit process. It stages all changes, generates a clean, plain-text commit message using the OpenRouter API, and commits the changes.
 
 ## Installation
 
