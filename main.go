@@ -22,15 +22,40 @@ func main() {
 		os.Exit(1)
 	}
 
+	var indexSnapshot string
+	rollbackOnError := !staged
+	if rollbackOnError {
+		var err error
+		indexSnapshot, err = snapshotIndex()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
 	var spinner *Spinner
+	handleError := func(err error, shouldRollback bool) {
+		if spinner != nil {
+			spinner.Stop()
+		}
+
+		if shouldRollback {
+			if restoreErr := restoreIndex(indexSnapshot); restoreErr != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v (also failed to restore staged state: %v)\n", err, restoreErr)
+				os.Exit(1)
+			}
+		}
+
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
 	if !staged {
 		spinner = NewSpinner("Staging all changes...")
 		spinner.Start()
 
 		if err := stageAll(); err != nil {
-			spinner.Stop()
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			handleError(err, rollbackOnError)
 		}
 	} else {
 		spinner = NewSpinner("Checking staged changes...")
@@ -39,17 +64,13 @@ func main() {
 
 	diff, err := getStagedDiff()
 	if err != nil {
-		spinner.Stop()
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		handleError(err, rollbackOnError)
 	}
 
 	spinner.UpdateMessage("Generating commit message...")
 	message, err := generateCommitMessage(diff, model)
 	if err != nil {
-		spinner.Stop()
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		handleError(err, rollbackOnError)
 	}
 
 	spinner.Stop()
@@ -59,17 +80,15 @@ func main() {
 	spinner.Start()
 
 	if err := commit(message); err != nil {
-		spinner.Stop()
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		handleError(err, rollbackOnError)
 	}
+
+	rollbackOnError = false
 
 	if pushChanges {
 		spinner.UpdateMessage("Pushing to remote...")
 		if err := push(); err != nil {
-			spinner.Stop()
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			handleError(err, false)
 		}
 		spinner.Stop()
 		fmt.Println("Committed and pushed successfully.")

@@ -8,6 +8,15 @@ import (
 	"testing"
 )
 
+func hasArg(args []string, target string) bool {
+	for _, arg := range args {
+		if arg == target {
+			return true
+		}
+	}
+	return false
+}
+
 // HelperProcess is used to mock exec.Command
 func TestHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
@@ -40,6 +49,11 @@ func TestHelperProcess(t *testing.T) {
 				// stageAll
 				os.Exit(0)
 			case "diff":
+				if hasArg(subargs, "--binary") {
+					fmt.Print(os.Getenv("MOCK_GIT_DIFF_BINARY"))
+					os.Exit(0)
+				}
+
 				// getStagedDiff
 				// Return diff content if checking for changes, or empty if testing no changes
 				if os.Getenv("MOCK_GIT_DIFF_EMPTY") == "1" {
@@ -53,6 +67,18 @@ func TestHelperProcess(t *testing.T) {
 				os.Exit(0)
 			case "push":
 				// push
+				os.Exit(0)
+			case "reset":
+				if os.Getenv("MOCK_GIT_RESET_FAIL") == "1" {
+					fmt.Fprint(os.Stderr, "reset failed")
+					os.Exit(1)
+				}
+				os.Exit(0)
+			case "apply":
+				if os.Getenv("MOCK_GIT_APPLY_FAIL") == "1" {
+					fmt.Fprint(os.Stderr, "apply failed")
+					os.Exit(1)
+				}
 				os.Exit(0)
 			}
 		}
@@ -69,6 +95,15 @@ func mockExecCommand(command string, args ...string) *exec.Cmd {
 	// Pass through specific mock env vars
 	if val := os.Getenv("MOCK_GIT_DIFF_EMPTY"); val != "" {
 		cmd.Env = append(cmd.Env, "MOCK_GIT_DIFF_EMPTY="+val)
+	}
+	if val := os.Getenv("MOCK_GIT_DIFF_BINARY"); val != "" {
+		cmd.Env = append(cmd.Env, "MOCK_GIT_DIFF_BINARY="+val)
+	}
+	if val := os.Getenv("MOCK_GIT_RESET_FAIL"); val != "" {
+		cmd.Env = append(cmd.Env, "MOCK_GIT_RESET_FAIL="+val)
+	}
+	if val := os.Getenv("MOCK_GIT_APPLY_FAIL"); val != "" {
+		cmd.Env = append(cmd.Env, "MOCK_GIT_APPLY_FAIL="+val)
 	}
 	return cmd
 }
@@ -113,5 +148,74 @@ func TestCommit(t *testing.T) {
 
 	if err := commit("test message"); err != nil {
 		t.Errorf("commit() failed: %v", err)
+	}
+}
+
+func TestSnapshotIndex(t *testing.T) {
+	execCommand = mockExecCommand
+	defer func() { execCommand = exec.Command }()
+
+	os.Setenv("MOCK_GIT_DIFF_BINARY", "binary patch")
+	defer os.Unsetenv("MOCK_GIT_DIFF_BINARY")
+
+	snapshot, err := snapshotIndex()
+	if err != nil {
+		t.Errorf("snapshotIndex() failed: %v", err)
+	}
+	if snapshot != "binary patch" {
+		t.Errorf("Expected 'binary patch', got %q", snapshot)
+	}
+}
+
+func TestRestoreIndex(t *testing.T) {
+	execCommand = mockExecCommand
+	defer func() { execCommand = exec.Command }()
+
+	if err := restoreIndex("some patch"); err != nil {
+		t.Errorf("restoreIndex() failed: %v", err)
+	}
+}
+
+func TestRestoreIndexSkipsApplyForEmptySnapshot(t *testing.T) {
+	execCommand = mockExecCommand
+	defer func() { execCommand = exec.Command }()
+
+	os.Setenv("MOCK_GIT_APPLY_FAIL", "1")
+	defer os.Unsetenv("MOCK_GIT_APPLY_FAIL")
+
+	if err := restoreIndex(""); err != nil {
+		t.Errorf("restoreIndex() with empty snapshot failed: %v", err)
+	}
+}
+
+func TestRestoreIndexResetFailure(t *testing.T) {
+	execCommand = mockExecCommand
+	defer func() { execCommand = exec.Command }()
+
+	os.Setenv("MOCK_GIT_RESET_FAIL", "1")
+	defer os.Unsetenv("MOCK_GIT_RESET_FAIL")
+
+	err := restoreIndex("some patch")
+	if err == nil {
+		t.Fatal("Expected restoreIndex() to fail when reset fails")
+	}
+	if !strings.Contains(err.Error(), "failed to reset index") {
+		t.Errorf("Expected reset failure message, got %v", err)
+	}
+}
+
+func TestRestoreIndexApplyFailure(t *testing.T) {
+	execCommand = mockExecCommand
+	defer func() { execCommand = exec.Command }()
+
+	os.Setenv("MOCK_GIT_APPLY_FAIL", "1")
+	defer os.Unsetenv("MOCK_GIT_APPLY_FAIL")
+
+	err := restoreIndex("some patch")
+	if err == nil {
+		t.Fatal("Expected restoreIndex() to fail when apply fails")
+	}
+	if !strings.Contains(err.Error(), "failed to restore staged changes") {
+		t.Errorf("Expected apply failure message, got %v", err)
 	}
 }

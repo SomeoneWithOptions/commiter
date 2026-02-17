@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -23,6 +24,36 @@ func stageAll() error {
 	if err != nil {
 		return errorf("failed to stage changes: %s", strings.TrimSpace(string(output)))
 	}
+	return nil
+}
+
+func snapshotIndex() (string, error) {
+	cmd := execCommand("git", "diff", "--cached", "--binary")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", errorf("failed to snapshot staged changes: %s", strings.TrimSpace(string(output)))
+	}
+	return string(output), nil
+}
+
+func restoreIndex(snapshot string) error {
+	resetCmd := execCommand("git", "reset")
+	resetOutput, err := resetCmd.CombinedOutput()
+	if err != nil {
+		return errorf("failed to reset index: %s", strings.TrimSpace(string(resetOutput)))
+	}
+
+	if strings.TrimSpace(snapshot) == "" {
+		return nil
+	}
+
+	applyCmd := execCommand("git", "apply", "--cached", "--whitespace=nowarn", "-")
+	applyCmd.Stdin = bytes.NewBufferString(snapshot)
+	applyOutput, err := applyCmd.CombinedOutput()
+	if err != nil {
+		return errorf("failed to restore staged changes: %s", strings.TrimSpace(string(applyOutput)))
+	}
+
 	return nil
 }
 
