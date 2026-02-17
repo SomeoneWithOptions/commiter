@@ -29,7 +29,7 @@ func generateCommitMessage(diff string, model string) (string, error) {
 			{"role": "user", "content": diff},
 		},
 		"temperature": 0.3,
-		"max_tokens":  2000,
+		"max_tokens":  3000,
 	}
 
 	jsonBody, err := json.Marshal(requestBody)
@@ -38,7 +38,7 @@ func generateCommitMessage(diff string, model string) (string, error) {
 	}
 
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 20 * time.Second,
 	}
 
 	req, err := http.NewRequest("POST", openRouterEndpoint, bytes.NewBuffer(jsonBody))
