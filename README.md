@@ -25,9 +25,11 @@ go build -o commiter .
 - `--model`: Specify the OpenRouter model to use (default: `arcee-ai/trinity-mini:free`).
 - `--push`: Push changes to the remote repository after a successful commit (default: `false`).
 - `--staged`: Only commit changes that are already staged (default: `false`).
+- `--dry-run`: Preview the diff and generated commit message without staging, committing, or pushing (default: `false`).
 
 ```bash
 ./commiter --push
 ./commiter --staged
+./commiter --dry-run
 ./commiter --model "openai/gpt-3.5-turbo" --push
 ```

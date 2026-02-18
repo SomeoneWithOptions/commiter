@@ -70,6 +70,19 @@ func getStagedDiff() (string, error) {
 	return diff, nil
 }
 
+func getFullDiff() (string, error) {
+	cmd := execCommand("git", "diff", "HEAD")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", errorf("failed to get diff: %s", strings.TrimSpace(string(output)))
+	}
+	diff := strings.TrimSpace(string(output))
+	if diff == "" {
+		return "", errorf("no changes to commit")
+	}
+	return diff, nil
+}
+
 func commit(message string) error {
 	cmd := execCommand("git", "commit", "-m", message)
 	output, err := cmd.CombinedOutput()

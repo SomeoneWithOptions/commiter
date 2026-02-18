@@ -142,6 +142,31 @@ func TestGetStagedDiff(t *testing.T) {
 	}
 }
 
+func TestGetFullDiff(t *testing.T) {
+	execCommand = mockExecCommand
+	defer func() { execCommand = exec.Command }()
+
+	// Test with changes
+	diff, err := getFullDiff()
+	if err != nil {
+		t.Errorf("getFullDiff() failed: %v", err)
+	}
+	if diff != "diff content" {
+		t.Errorf("Expected 'diff content', got %q", diff)
+	}
+
+	// Test with no changes
+	os.Setenv("MOCK_GIT_DIFF_EMPTY", "1")
+	defer os.Unsetenv("MOCK_GIT_DIFF_EMPTY")
+
+	_, err = getFullDiff()
+	if err == nil {
+		t.Error("Expected error when no changes are present, got nil")
+	} else if !strings.Contains(err.Error(), "no changes to commit") {
+		t.Errorf("Expected 'no changes to commit' error, got %v", err)
+	}
+}
+
 func TestCommit(t *testing.T) {
 	execCommand = mockExecCommand
 	defer func() { execCommand = exec.Command }()

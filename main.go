@@ -12,9 +12,11 @@ func main() {
 	var model string
 	var pushChanges bool
 	var staged bool
+	var dryRun bool
 	flag.StringVar(&model, "model", defaultModel, "OpenRouter model to use")
 	flag.BoolVar(&pushChanges, "push", false, "Push to remote after committing")
 	flag.BoolVar(&staged, "staged", false, "Only commit staged changes")
+	flag.BoolVar(&dryRun, "dry-run", false, "Preview diff and commit message without committing")
 	flag.Parse()
 
 	if err := isGitRepo(); err != nil {
@@ -23,7 +25,7 @@ func main() {
 	}
 
 	var indexSnapshot string
-	rollbackOnError := !staged
+	rollbackOnError := !staged && !dryRun
 	if rollbackOnError {
 		var err error
 		indexSnapshot, err = snapshotIndex()
@@ -50,30 +52,52 @@ func main() {
 		os.Exit(1)
 	}
 
-	if !staged {
+	if !staged && !dryRun {
 		spinner = NewSpinner("Staging all changes...")
 		spinner.Start()
 
 		if err := stageAll(); err != nil {
 			handleError(err, rollbackOnError)
 		}
-	} else {
+	} else if staged {
 		spinner = NewSpinner("Checking staged changes...")
 		spinner.Start()
 	}
 
-	diff, err := getStagedDiff()
+	var diff string
+	var err error
+	if dryRun && !staged {
+		diff, err = getFullDiff()
+	} else {
+		diff, err = getStagedDiff()
+	}
 	if err != nil {
 		handleError(err, rollbackOnError)
 	}
 
-	spinner.UpdateMessage("Generating commit message...")
+	if spinner == nil {
+		spinner = NewSpinner("Generating commit message...")
+		spinner.Start()
+	} else {
+		spinner.UpdateMessage("Generating commit message...")
+	}
+
 	message, err := generateCommitMessage(diff, model)
 	if err != nil {
 		handleError(err, rollbackOnError)
 	}
 
 	spinner.Stop()
+
+	if dryRun {
+		fmt.Println("--- Diff ---")
+		fmt.Println(diff)
+		fmt.Println()
+		fmt.Println("--- Commit Message ---")
+		fmt.Println(message)
+		return
+	}
+
 	fmt.Println(message)
 
 	spinner = NewSpinner("Committing...")
