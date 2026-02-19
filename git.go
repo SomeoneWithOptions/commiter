@@ -19,7 +19,7 @@ func isGitRepo() error {
 }
 
 func stageAll() error {
-	cmd := execCommand("git", "add", "-A")
+	cmd := execCommand("git", "add", "--all", ":/")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return errorf("failed to stage changes: %s", strings.TrimSpace(string(output)))

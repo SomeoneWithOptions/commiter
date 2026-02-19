@@ -25,8 +25,13 @@ func main() {
 	}
 
 	var indexSnapshot string
-	rollbackOnError := !staged && !dryRun
-	if rollbackOnError {
+	// We need to snapshot and potentially rollback if we are doing a real commit (!staged && !dryRun)
+	// OR if we are doing a full dry-run (dryRun && !staged) where we need to temporarily stage everything
+	// to get the diff including untracked files.
+	needsSnapshot := !staged
+	rollbackOnError := !staged && !dryRun // Only error rollbacks for actual commits
+
+	if needsSnapshot {
 		var err error
 		indexSnapshot, err = snapshotIndex()
 		if err != nil {
@@ -52,10 +57,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if !staged && !dryRun {
-		spinner = NewSpinner("Staging all changes...")
-		spinner.Start()
-
+	// For a full run (real or dry), we stage all changes
+	if !staged {
+		if !dryRun {
+			spinner = NewSpinner("Staging all changes...")
+			spinner.Start()
+		}
 		if err := stageAll(); err != nil {
 			handleError(err, rollbackOnError)
 		}
@@ -66,11 +73,17 @@ func main() {
 
 	var diff string
 	var err error
+
+	// Now everything we want is staged (either by us or by the user)
+	diff, err = getStagedDiff()
+
+	// If it's a dry-run and we temporarily staged everything, restore the index now
 	if dryRun && !staged {
-		diff, err = getFullDiff()
-	} else {
-		diff, err = getStagedDiff()
+		if restoreErr := restoreIndex(indexSnapshot); restoreErr != nil {
+			handleError(fmt.Errorf("failed to restore index after diff: %w", restoreErr), false)
+		}
 	}
+
 	if err != nil {
 		handleError(err, rollbackOnError)
 	}

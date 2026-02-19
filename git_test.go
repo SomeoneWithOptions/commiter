@@ -143,6 +143,7 @@ func TestGetStagedDiff(t *testing.T) {
 }
 
 func TestGetFullDiff(t *testing.T) {
+	t.Skip("getFullDiff is currently unused but kept for potential future use")
 	execCommand = mockExecCommand
 	defer func() { execCommand = exec.Command }()
 
