@@ -9,11 +9,11 @@ func TestCleanCommitMessage(t *testing.T) {
 	}{
 		{
 			input:    "Feat: add new feature",
-			expected: "add new feature",
+			expected: "feat: add new feature",
 		},
 		{
 			input:    "fix(ui): fix button color.",
-			expected: "fix button color",
+			expected: "fix(ui): fix button color",
 		},
 		{
 			input:    "  Update   documentation.  ",
@@ -21,7 +21,7 @@ func TestCleanCommitMessage(t *testing.T) {
 		},
 		{
 			input:    "Refactor: CLEAN UP CODE",
-			expected: "clean up code",
+			expected: "refactor: clean up code",
 		},
 		{
 			input:    "simple message",
@@ -29,7 +29,19 @@ func TestCleanCommitMessage(t *testing.T) {
 		},
 		{
 			input:    "feat(auth): add login endpoint",
-			expected: "add login endpoint",
+			expected: "feat(auth): add login endpoint",
+		},
+		{
+			input:    "implementgetfulldiff function and test",
+			expected: "implement getfulldiff function and test",
+		},
+		{
+			input:    "addtest cases for git commands",
+			expected: "add test cases for git commands",
+		},
+		{
+			input:    "addpushand staged flags",
+			expected: "add push and staged flags",
 		},
 	}
 
