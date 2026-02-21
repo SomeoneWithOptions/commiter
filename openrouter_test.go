@@ -43,6 +43,25 @@ func TestCleanCommitMessage(t *testing.T) {
 			input:    "addpushand staged flags",
 			expected: "add push and staged flags",
 		},
+		// Real-world regressions: correctly-spaced variants of messages the LLM
+		// previously produced with merged words. cleanCommitMessage must not
+		// disturb already-correct spacing.
+		{
+			input:    "feat(httpapi): add local usage fallback handling",
+			expected: "feat(httpapi): add local usage fallback handling",
+		},
+		{
+			input:    "style(styles.css): change position to right",
+			expected: "style(styles.css): change position to right",
+		},
+		{
+			input:    "test: add test for copying user messages",
+			expected: "test: add test for copying user messages",
+		},
+		{
+			input:    "chore: sync models on a schedule",
+			expected: "chore: sync models on a schedule",
+		},
 	}
 
 	for _, tt := range tests {

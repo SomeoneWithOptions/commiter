@@ -11,5 +11,6 @@ Rules:
 - Maximum 100 characters total
 - Be concise but descriptive (typically 5-10 words)
 - If multiple edits are the same pattern, summarize once instead of repeating
+- CRITICAL: Every word must be separated by a single space. Never concatenate or merge words together. For example, write "add local" not "addlocal", "to right" not "toright", "sync models" not "syncmodels", "copying user" not "copyinguser".
 - Output ONLY the commit message, nothing else`
 }
