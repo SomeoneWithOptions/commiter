@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-const defaultModel = "arcee-ai/trinity-mini:free"
+const defaultModel = "openai/gpt-oss-120b"
 
 func main() {
 	var model string
