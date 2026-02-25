@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+)
 
 func TestCleanCommitMessage(t *testing.T) {
 	tests := []struct {
@@ -69,5 +73,80 @@ func TestCleanCommitMessage(t *testing.T) {
 		if result != tt.expected {
 			t.Errorf("cleanCommitMessage(%q) = %q, want %q", tt.input, result, tt.expected)
 		}
+	}
+}
+
+func TestExtractMessageContent(t *testing.T) {
+	tests := []struct {
+		name    string
+		raw     string
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "plain string content",
+			raw:  `"feat: add tests"`,
+			want: "feat: add tests",
+		},
+		{
+			name: "multipart text content",
+			raw:  `[{"type":"text","text":"feat:"},{"type":"text","text":"add tests"}]`,
+			want: "feat: add tests",
+		},
+		{
+			name:    "unsupported object content",
+			raw:     `{"text":"feat: add tests"}`,
+			want:    "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := extractMessageContent(json.RawMessage(tt.raw))
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("extractMessageContent(%s) expected error", tt.raw)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("extractMessageContent(%s) unexpected error: %v", tt.raw, err)
+			}
+			if got != tt.want {
+				t.Fatalf("extractMessageContent(%s) = %q, want %q", tt.raw, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLimitDiffForPrompt(t *testing.T) {
+	short := "diff --git a/file b/file\n+line\n"
+	if got := limitDiffForPrompt(short, 100); got != short {
+		t.Fatalf("expected short diff unchanged, got %q", got)
+	}
+
+	long := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const marker = "\n\n[... diff truncated to fit model context ...]\n\n"
+	gotTiny := limitDiffForPrompt(long, 30)
+	if len(gotTiny) != 30 {
+		t.Fatalf("expected length 30, got %d (%q)", len(gotTiny), gotTiny)
+	}
+	if gotTiny != long[:30] {
+		t.Fatalf("expected prefix-only truncation for tiny budget, got %q", gotTiny)
+	}
+
+	got := limitDiffForPrompt(long, 59)
+	if len(got) != 59 {
+		t.Fatalf("expected length 59, got %d (%q)", len(got), got)
+	}
+	if got[0:4] != "abcd" {
+		t.Fatalf("expected preserved head, got %q", got[0:4])
+	}
+	if got[len(got)-4:] != "6789" {
+		t.Fatalf("expected preserved tail, got %q", got[len(got)-4:])
+	}
+	if !strings.Contains(got, marker) {
+		t.Fatalf("expected marker in truncated diff: %q", got)
 	}
 }
