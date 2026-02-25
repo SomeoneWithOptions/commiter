@@ -26,10 +26,12 @@ go build -o commiter .
 - `--push`: Push changes to the remote repository after a successful commit (default: `false`).
 - `--staged`: Only commit changes that are already staged (default: `false`).
 - `--dry-run`: Preview the diff and generated commit message without staging, committing, or pushing (default: `false`).
+- `--edit`: Open default editor to confirm/edit generated message before committing (default: `false`).
 
 ```bash
 ./commiter --push
 ./commiter --staged
 ./commiter --dry-run
+./commiter --edit
 ./commiter --model "openai/gpt-3.5-turbo" --push
 ```

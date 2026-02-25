@@ -63,7 +63,18 @@ func TestHelperProcess(t *testing.T) {
 				}
 				os.Exit(0)
 			case "commit":
-				// commit
+				if os.Getenv("MOCK_GIT_EXPECT_EDIT") == "1" && !hasArg(subargs, "--edit") {
+					fmt.Fprint(os.Stderr, "missing --edit")
+					os.Exit(1)
+				}
+				if os.Getenv("MOCK_GIT_EXPECT_MESSAGE_FLAG") == "1" && !hasArg(subargs, "-m") {
+					fmt.Fprint(os.Stderr, "missing -m")
+					os.Exit(1)
+				}
+				if os.Getenv("MOCK_GIT_COMMIT_FAIL") == "1" {
+					fmt.Fprint(os.Stderr, "commit failed")
+					os.Exit(1)
+				}
 				os.Exit(0)
 			case "push":
 				// push
@@ -104,6 +115,15 @@ func mockExecCommand(command string, args ...string) *exec.Cmd {
 	}
 	if val := os.Getenv("MOCK_GIT_APPLY_FAIL"); val != "" {
 		cmd.Env = append(cmd.Env, "MOCK_GIT_APPLY_FAIL="+val)
+	}
+	if val := os.Getenv("MOCK_GIT_EXPECT_EDIT"); val != "" {
+		cmd.Env = append(cmd.Env, "MOCK_GIT_EXPECT_EDIT="+val)
+	}
+	if val := os.Getenv("MOCK_GIT_EXPECT_MESSAGE_FLAG"); val != "" {
+		cmd.Env = append(cmd.Env, "MOCK_GIT_EXPECT_MESSAGE_FLAG="+val)
+	}
+	if val := os.Getenv("MOCK_GIT_COMMIT_FAIL"); val != "" {
+		cmd.Env = append(cmd.Env, "MOCK_GIT_COMMIT_FAIL="+val)
 	}
 	return cmd
 }
@@ -172,8 +192,41 @@ func TestCommit(t *testing.T) {
 	execCommand = mockExecCommand
 	defer func() { execCommand = exec.Command }()
 
+	os.Setenv("MOCK_GIT_EXPECT_MESSAGE_FLAG", "1")
+	defer os.Unsetenv("MOCK_GIT_EXPECT_MESSAGE_FLAG")
+
 	if err := commit("test message"); err != nil {
 		t.Errorf("commit() failed: %v", err)
+	}
+}
+
+func TestCommitWithEditor(t *testing.T) {
+	execCommand = mockExecCommand
+	defer func() { execCommand = exec.Command }()
+
+	os.Setenv("MOCK_GIT_EXPECT_EDIT", "1")
+	defer os.Unsetenv("MOCK_GIT_EXPECT_EDIT")
+	os.Setenv("MOCK_GIT_EXPECT_MESSAGE_FLAG", "1")
+	defer os.Unsetenv("MOCK_GIT_EXPECT_MESSAGE_FLAG")
+
+	if err := commitWithEditor("test message"); err != nil {
+		t.Errorf("commitWithEditor() failed: %v", err)
+	}
+}
+
+func TestCommitWithEditorFailure(t *testing.T) {
+	execCommand = mockExecCommand
+	defer func() { execCommand = exec.Command }()
+
+	os.Setenv("MOCK_GIT_COMMIT_FAIL", "1")
+	defer os.Unsetenv("MOCK_GIT_COMMIT_FAIL")
+
+	err := commitWithEditor("test message")
+	if err == nil {
+		t.Fatal("Expected commitWithEditor() to fail")
+	}
+	if !strings.Contains(err.Error(), "failed to commit") {
+		t.Errorf("Expected commit failure message, got %v", err)
 	}
 }
 

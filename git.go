@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -88,6 +89,17 @@ func commit(message string) error {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return errorf("failed to commit: %s", strings.TrimSpace(string(output)))
+	}
+	return nil
+}
+
+func commitWithEditor(message string) error {
+	cmd := execCommand("git", "commit", "--edit", "-m", message)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return errorf("failed to commit: %v", err)
 	}
 	return nil
 }

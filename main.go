@@ -13,10 +13,12 @@ func main() {
 	var pushChanges bool
 	var staged bool
 	var dryRun bool
+	var edit bool
 	flag.StringVar(&model, "model", defaultModel, "OpenRouter model to use")
 	flag.BoolVar(&pushChanges, "push", false, "Push to remote after committing")
 	flag.BoolVar(&staged, "staged", false, "Only commit staged changes")
 	flag.BoolVar(&dryRun, "dry-run", false, "Preview diff and commit message without committing")
+	flag.BoolVar(&edit, "edit", false, "Open default editor to confirm/edit generated message before committing")
 	flag.Parse()
 
 	if err := isGitRepo(); err != nil {
@@ -101,6 +103,7 @@ func main() {
 	}
 
 	spinner.Stop()
+	spinner = nil
 
 	if dryRun {
 		fmt.Println("--- Diff ---")
@@ -113,24 +116,38 @@ func main() {
 
 	fmt.Println(message)
 
-	spinner = NewSpinner("Committing...")
-	spinner.Start()
+	if edit {
+		fmt.Println("Opening editor to confirm/edit commit message...")
+		if err := commitWithEditor(message); err != nil {
+			handleError(err, rollbackOnError)
+		}
+	} else {
+		spinner = NewSpinner("Committing...")
+		spinner.Start()
 
-	if err := commit(message); err != nil {
-		handleError(err, rollbackOnError)
+		if err := commit(message); err != nil {
+			handleError(err, rollbackOnError)
+		}
 	}
 
 	rollbackOnError = false
 
 	if pushChanges {
-		spinner.UpdateMessage("Pushing to remote...")
+		if edit {
+			spinner = NewSpinner("Pushing to remote...")
+			spinner.Start()
+		} else {
+			spinner.UpdateMessage("Pushing to remote...")
+		}
 		if err := push(); err != nil {
 			handleError(err, false)
 		}
 		spinner.Stop()
 		fmt.Println("Committed and pushed successfully.")
 	} else {
-		spinner.Stop()
+		if spinner != nil {
+			spinner.Stop()
+		}
 		fmt.Println("Committed successfully.")
 	}
 }
