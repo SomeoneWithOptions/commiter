@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-const defaultModel = "openai/gpt-oss-120b"
+const defaultModel = "google/gemini-2.5-flash-lite"
 
 func main() {
 	var model string
