@@ -2,7 +2,15 @@
 
 A Go CLI tool that automates the git commit process. It stages all changes, generates a clean, plain-text commit message using the OpenRouter API, and commits the changes.
 
-## Installation
+## Quick Install
+
+```bash
+curl -fsSL https://go.sanetomore.com/commiter | sh
+```
+
+This will download the latest release binary for your OS and architecture and install it to `~/.local/bin/c`.
+
+## Build from Source
 
 ```bash
 go build -o commiter .
