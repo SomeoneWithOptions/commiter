@@ -40,6 +40,26 @@ echo "Installed to ${INSTALL_DIR}/${BINARY_NAME}"
 # Warn if not in PATH
 case ":$PATH:" in
   *":${INSTALL_DIR}:"*) ;;
-  *) echo "Warning: ${INSTALL_DIR} is not in your PATH. Add it with:"
-     echo "  export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
+  *)
+    echo "Warning: ${INSTALL_DIR} is not in your PATH."
+    SHELL_NAME=$(basename "${SHELL:-sh}")
+    case "$SHELL_NAME" in
+      fish)
+        echo "Add it with:"
+        echo "  fish_add_path $INSTALL_DIR"
+        ;;
+      zsh)
+        echo "Add it to your ~/.zshrc:"
+        echo "  echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.zshrc"
+        ;;
+      bash)
+        echo "Add it to your ~/.bashrc or ~/.bash_profile:"
+        echo "  echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.bashrc"
+        ;;
+      *)
+        echo "Add it to your shell configuration:"
+        echo "  export PATH=\"$INSTALL_DIR:\$PATH\""
+        ;;
+    esac
+    ;;
 esac
