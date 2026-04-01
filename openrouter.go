@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -155,34 +154,10 @@ func limitDiffForPrompt(diff string, maxChars int) string {
 }
 
 func cleanCommitMessage(msg string) string {
-	// Trim whitespace
 	msg = strings.TrimSpace(msg)
-
-	// Normalize spaces (replace multiple spaces with single space)
-	reSpaces := regexp.MustCompile(`\s+`)
-	msg = reSpaces.ReplaceAllString(msg, " ")
-
-	// Fix merged words by adding space before common patterns
-	// This handles cases like "addtest", "implementget", "updateindex"
-	reMerge1 := regexp.MustCompile(`([a-z]+)(test|fix|docs|feat|build|ci|chore|perf|refactor|style|get|update|implement|push)`)
-	msg = reMerge1.ReplaceAllString(msg, "$1 $2")
-
-	// Fix "and" merged with previous word (e.g., "pushand" -> "push and")
-	reMerge2 := regexp.MustCompile(`([a-z]+)and\b`)
-	msg = reMerge2.ReplaceAllString(msg, "$1 and")
-
-	// Fix merged words without spaces by adding space between lowercase/uppercase transitions
-	reMerge3 := regexp.MustCompile(`([a-z])([A-Z])`)
-	msg = reMerge3.ReplaceAllString(msg, "$1 $2")
-
-	// To lower case (after fixing spacing to preserve word boundaries)
+	msg = strings.Join(strings.Fields(msg), " ")
 	msg = strings.ToLower(msg)
-
-	// Remove trailing dot
 	msg = strings.TrimSuffix(msg, ".")
-
-	// Trim again after any transformations
 	msg = strings.TrimSpace(msg)
-
 	return msg
 }

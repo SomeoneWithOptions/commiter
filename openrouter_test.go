@@ -36,20 +36,21 @@ func TestCleanCommitMessage(t *testing.T) {
 			expected: "feat(auth): add login endpoint",
 		},
 		{
-			input:    "implementgetfulldiff function and test",
-			expected: "implement getfulldiff function and test",
+			input:    "AddPushAnd staged flags.",
+			expected: "addpushand staged flags",
 		},
 		{
-			input:    "addtest cases for git commands",
-			expected: "add test cases for git commands",
+			input:    "feat(cli): add command help",
+			expected: "feat(cli): add command help",
 		},
 		{
-			input:    "addpushand staged flags",
-			expected: "add push and staged flags",
+			input:    "fix: update install command",
+			expected: "fix: update install command",
 		},
-		// Real-world regressions: correctly-spaced variants of messages the LLM
-		// previously produced with merged words. cleanCommitMessage must not
-		// disturb already-correct spacing.
+		{
+			input:    "docs: explain command usage",
+			expected: "docs: explain command usage",
+		},
 		{
 			input:    "feat(httpapi): add local usage fallback handling",
 			expected: "feat(httpapi): add local usage fallback handling",
