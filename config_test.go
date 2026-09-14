@@ -32,6 +32,53 @@ func TestResolveOpenRouterAPIKeyPrefersConfig(t *testing.T) {
 	}
 }
 
+func TestResolveOpenRouterAPIKeyReadsOnePasswordReference(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("test uses a POSIX shell script")
+	}
+
+	binDir := t.TempDir()
+	fakeOP := filepath.Join(binDir, "op")
+	writeTestConfig(t, fakeOP, `#!/bin/sh
+if [ "$#" -ne 3 ] || [ "$1" != "read" ] || [ "$2" != "--no-newline" ] || [ "$3" != "op://Private/OpenRouter/personal" ]; then
+  echo "unexpected arguments" >&2
+  exit 2
+fi
+printf '%s' 'from-1password'
+`, 0o700)
+	t.Setenv("PATH", binDir)
+
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeTestConfig(t, path, `{"openrouter":{"api_key":"op://Private/OpenRouter/personal"}}`, 0o600)
+
+	got, err := resolveOpenRouterAPIKey(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "from-1password" {
+		t.Fatalf("got %q, want key read from 1Password", got)
+	}
+}
+
+func TestResolveOpenRouterAPIKeyReportsOnePasswordFailure(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("test uses a POSIX shell script")
+	}
+
+	binDir := t.TempDir()
+	fakeOP := filepath.Join(binDir, "op")
+	writeTestConfig(t, fakeOP, "#!/bin/sh\necho 'not signed in' >&2\nexit 1\n", 0o700)
+	t.Setenv("PATH", binDir)
+
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeTestConfig(t, path, `{"openrouter":{"api_key":"op://Private/OpenRouter/personal"}}`, 0o600)
+
+	_, err := resolveOpenRouterAPIKey(path)
+	if err == nil || !strings.Contains(err.Error(), "not signed in") {
+		t.Fatalf("got error %v, want 1Password failure", err)
+	}
+}
+
 func TestResolveOpenRouterAPIKeyFallsBackToEnvironment(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	t.Setenv("OPENROUTER_API_KEY", "from-env")

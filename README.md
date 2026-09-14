@@ -18,7 +18,7 @@ go build -o commiter .
 
 ## Usage
 
-1. Store your OpenRouter API key in the config file created by the installer:
+1. Configure your OpenRouter API key in the file created by the installer:
 
    ```bash
    ${EDITOR:-vi} ~/.config/commiter/config.json
@@ -31,6 +31,23 @@ go build -o commiter .
    touch ~/.config/commiter/config.json
    chmod 600 ~/.config/commiter/config.json
    ```
+
+   To read the key directly from 1Password, install and sign in to the
+   [1Password CLI](https://developer.1password.com/docs/cli/), then use a secret reference:
+
+   ```json
+   {
+     "openrouter": {
+       "api_key": "op://Private/OpenRouter/personal"
+     }
+   }
+   ```
+
+   `commiter` invokes `op read` directly without a shell, so shell commands and
+   substitutions in the config are never executed. The referenced field must
+   contain only the OpenRouter API key.
+
+   A literal API key is also supported:
 
    ```json
    {

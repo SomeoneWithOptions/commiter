@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -48,14 +50,51 @@ func resolveOpenRouterAPIKey(configPath string) (string, error) {
 			return "", err
 		}
 	} else if found {
-		return apiKey, nil
+		return resolveAPIKeyValue(apiKey)
 	}
 
 	if apiKey := strings.TrimSpace(os.Getenv("OPENROUTER_API_KEY")); apiKey != "" {
-		return apiKey, nil
+		return resolveAPIKeyValue(apiKey)
 	}
 
 	return "", fmt.Errorf("OpenRouter API key not found in %s or OPENROUTER_API_KEY", configPath)
+}
+
+func resolveAPIKeyValue(value string) (string, error) {
+	if !strings.HasPrefix(value, "op://") {
+		return value, nil
+	}
+
+	return readOnePasswordSecret(value)
+}
+
+func readOnePasswordSecret(reference string) (string, error) {
+	opPath, err := exec.LookPath("op")
+	if err != nil {
+		return "", errors.New("cannot resolve 1Password reference: 1Password CLI (op) not found in PATH")
+	}
+
+	// Pass the reference as one argument without a shell. Config contents can
+	// therefore never be interpreted as shell syntax.
+	cmd := exec.Command(opPath, "read", "--no-newline", reference)
+	cmd.Stdin = os.Stdin
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	output, err := cmd.Output()
+	if err != nil {
+		detail := strings.TrimSpace(stderr.String())
+		if detail != "" {
+			return "", fmt.Errorf("failed to read OpenRouter API key from 1Password: %s", detail)
+		}
+		return "", fmt.Errorf("failed to read OpenRouter API key from 1Password: %w", err)
+	}
+
+	secret := strings.TrimSpace(string(output))
+	if secret == "" {
+		return "", errors.New("1Password returned an empty OpenRouter API key")
+	}
+	return secret, nil
 }
 
 func readConfigAPIKey(path string) (apiKey string, found bool, err error) {
