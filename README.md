@@ -18,12 +18,34 @@ go build -o commiter .
 
 ## Usage
 
-1. Set your OpenRouter API key:
+1. Store your OpenRouter API key in the config file:
+
+   ```bash
+   mkdir -p ~/.config/commiter
+   install -m 600 /dev/null ~/.config/commiter/config.json
+   ${EDITOR:-vi} ~/.config/commiter/config.json
+   ```
+
+   ```json
+   {
+     "openrouter": {
+       "api_key": "your-key-here"
+     }
+   }
+   ```
+
+   On Linux, the default config directory follows `$XDG_CONFIG_HOME` when set. On macOS and Windows, the platform user config directory is used. Config files with group or other permissions are rejected on Unix.
+
+   Alternatively, keep using the environment variable when no key is configured:
+
    ```bash
    export OPENROUTER_API_KEY="your-key-here"
    ```
 
+   Config takes precedence over `OPENROUTER_API_KEY`.
+
 2. Run the tool in your git repository:
+
    ```bash
    ./commiter
    ```
@@ -31,6 +53,7 @@ go build -o commiter .
 ### Flags
 
 - `--model`: Specify the OpenRouter model to use (default: `google/gemini-2.5-flash-lite`).
+- `--config`: Use a different JSON config file.
 - `--push`: Push changes to the remote repository after a successful commit (default: `false`).
 - `--staged`: Only commit changes that are already staged (default: `false`).
 - `--dry-run`: Preview the diff and generated commit message without staging, committing, or pushing (default: `false`).
@@ -41,5 +64,6 @@ go build -o commiter .
 ./commiter --staged
 ./commiter --dry-run
 ./commiter --edit
+./commiter --config ~/.config/commiter/work.json
 ./commiter --model "openai/gpt-3.5-turbo" --push
 ```

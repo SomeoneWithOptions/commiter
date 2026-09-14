@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -15,9 +14,13 @@ const openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions"
 const maxDiffPromptChars = 30000
 
 func generateCommitMessage(diff string, model string) (string, error) {
-	apiKey := os.Getenv("OPENROUTER_API_KEY")
-	if apiKey == "" {
-		return "", fmt.Errorf("OPENROUTER_API_KEY environment variable is not set")
+	return generateCommitMessageWithConfig(diff, model, "")
+}
+
+func generateCommitMessageWithConfig(diff string, model string, configPath string) (string, error) {
+	apiKey, err := resolveOpenRouterAPIKey(configPath)
+	if err != nil {
+		return "", err
 	}
 
 	systemPrompt := getSystemPrompt()

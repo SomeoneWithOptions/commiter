@@ -10,11 +10,13 @@ const defaultModel = "google/gemini-2.5-flash-lite"
 
 func main() {
 	var model string
+	var configPath string
 	var pushChanges bool
 	var staged bool
 	var dryRun bool
 	var edit bool
 	flag.StringVar(&model, "model", defaultModel, "OpenRouter model to use")
+	flag.StringVar(&configPath, "config", "", "Config file path (default: user config directory/commiter/config.json)")
 	flag.BoolVar(&pushChanges, "push", false, "Push to remote after committing")
 	flag.BoolVar(&staged, "staged", false, "Only commit staged changes")
 	flag.BoolVar(&dryRun, "dry-run", false, "Preview diff and commit message without committing")
@@ -97,7 +99,7 @@ func main() {
 		spinner.UpdateMessage("Generating commit message...")
 	}
 
-	message, err := generateCommitMessage(diff, model)
+	message, err := generateCommitMessageWithConfig(diff, model, configPath)
 	if err != nil {
 		handleError(err, rollbackOnError)
 	}
