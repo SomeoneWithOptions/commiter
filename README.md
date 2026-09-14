@@ -8,7 +8,7 @@ A Go CLI tool that automates the git commit process. It stages all changes, gene
 curl -fsSL https://go.sanetomore.com/commiter | sh
 ```
 
-This will download the latest release binary for your OS and architecture and install it to `~/.local/bin/c`.
+This downloads the latest release binary to `~/.local/bin/c` and creates a private config containing a placeholder credential. Existing config is never overwritten.
 
 ## Build from Source
 
@@ -18,12 +18,18 @@ go build -o commiter .
 
 ## Usage
 
-1. Store your OpenRouter API key in the config file:
+1. Store your OpenRouter API key in the config file created by the installer:
+
+   ```bash
+   ${EDITOR:-vi} ~/.config/commiter/config.json
+   ```
+
+   For a Linux source install, create it first with:
 
    ```bash
    mkdir -p ~/.config/commiter
-   install -m 600 /dev/null ~/.config/commiter/config.json
-   ${EDITOR:-vi} ~/.config/commiter/config.json
+   touch ~/.config/commiter/config.json
+   chmod 600 ~/.config/commiter/config.json
    ```
 
    ```json
@@ -42,7 +48,7 @@ go build -o commiter .
    export OPENROUTER_API_KEY="your-key-here"
    ```
 
-   Config takes precedence over `OPENROUTER_API_KEY`.
+   Config takes precedence over `OPENROUTER_API_KEY`. The installer placeholder `your-key-here` is treated as unset, allowing environment fallback.
 
 2. Run the tool in your git repository:
 

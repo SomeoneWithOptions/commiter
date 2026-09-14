@@ -45,6 +45,20 @@ func TestResolveOpenRouterAPIKeyFallsBackToEnvironment(t *testing.T) {
 	}
 }
 
+func TestResolveOpenRouterAPIKeyPlaceholderFallsBackToEnvironment(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeTestConfig(t, path, `{"openrouter":{"api_key":"your-key-here"}}`, 0o600)
+	t.Setenv("OPENROUTER_API_KEY", "from-env")
+
+	got, err := resolveOpenRouterAPIKey(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "from-env" {
+		t.Fatalf("got %q, want environment key", got)
+	}
+}
+
 func TestResolveOpenRouterAPIKeyUsesDefaultConfig(t *testing.T) {
 	configDir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", configDir)

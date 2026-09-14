@@ -4,14 +4,26 @@ set -e
 REPO="SomeoneWithOptions/commiter"
 INSTALL_DIR="$HOME/.local/bin"
 BINARY_NAME="c"
+CONFIG_FILE_NAME="config.json"
 
 # Detect OS
 OS=$(uname -s)
 case "$OS" in
-  Darwin) OS="darwin" ;;
-  Linux)  OS="linux" ;;
-  *)      echo "Error: unsupported OS: $OS"; exit 1 ;;
+  Darwin)
+    OS="darwin"
+    CONFIG_HOME="$HOME/Library/Application Support"
+    ;;
+  Linux)
+    OS="linux"
+    CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+    ;;
+  *)
+    echo "Error: unsupported OS: $OS"
+    exit 1
+    ;;
 esac
+CONFIG_DIR="$CONFIG_HOME/commiter"
+CONFIG_FILE="$CONFIG_DIR/$CONFIG_FILE_NAME"
 
 # Detect architecture
 ARCH=$(uname -m)
@@ -36,6 +48,23 @@ curl -fsSL "$URL" -o "${INSTALL_DIR}/${BINARY_NAME}"
 chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
 
 echo "Installed to ${INSTALL_DIR}/${BINARY_NAME}"
+
+mkdir -p "$CONFIG_DIR"
+chmod 700 "$CONFIG_DIR"
+if [ -e "$CONFIG_FILE" ] || [ -L "$CONFIG_FILE" ]; then
+  echo "Preserved existing config at ${CONFIG_FILE}"
+else
+  umask 077
+  cat > "$CONFIG_FILE" <<'EOF'
+{
+  "openrouter": {
+    "api_key": "your-key-here"
+  }
+}
+EOF
+  echo "Created config at ${CONFIG_FILE}"
+  echo "Add your OpenRouter API key before running commiter."
+fi
 
 # Warn if not in PATH
 case ":$PATH:" in

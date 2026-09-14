@@ -11,7 +11,10 @@ import (
 	"strings"
 )
 
-const configFileName = "config.json"
+const (
+	configFileName    = "config.json"
+	placeholderAPIKey = "your-key-here"
+)
 
 type config struct {
 	OpenRouter struct {
@@ -88,5 +91,5 @@ func readConfigAPIKey(path string) (apiKey string, found bool, err error) {
 	}
 
 	apiKey = strings.TrimSpace(cfg.OpenRouter.APIKey)
-	return apiKey, apiKey != "", nil
+	return apiKey, apiKey != "" && apiKey != placeholderAPIKey, nil
 }
