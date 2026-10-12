@@ -58,7 +58,8 @@ else
   cat > "$CONFIG_FILE" <<'EOF'
 {
   "openrouter": {
-    "api_key": "your-key-here"
+    "api_key": "your-key-here",
+    "model": "openrouter/free"
   }
 }
 EOF

@@ -21,6 +21,7 @@ const (
 type config struct {
 	OpenRouter struct {
 		APIKey string `json:"api_key"`
+		Model  string `json:"model"`
 	} `json:"openrouter"`
 }
 
@@ -32,24 +33,40 @@ func defaultConfigPath() (string, error) {
 	return filepath.Join(configDir, "commiter", configFileName), nil
 }
 
-// resolveOpenRouterAPIKey reads the config before checking the environment.
-// An empty configPath selects the platform's default user config path.
-func resolveOpenRouterAPIKey(configPath string) (string, error) {
+// loadConfig reads the config file. An empty configPath selects the
+// platform's default user config path; a missing default config yields an
+// empty config, while a missing explicit config is an error.
+func loadConfig(configPath string) (cfg config, path string, err error) {
 	explicitPath := configPath != ""
 	if !explicitPath {
-		var err error
 		configPath, err = defaultConfigPath()
 		if err != nil {
-			return "", err
+			return config{}, "", err
 		}
 	}
 
-	apiKey, found, err := readConfigAPIKey(configPath)
+	cfg, err = readConfig(configPath)
 	if err != nil {
-		if !(errors.Is(err, os.ErrNotExist) && !explicitPath) {
-			return "", err
+		if errors.Is(err, os.ErrNotExist) && !explicitPath {
+			return config{}, configPath, nil
 		}
-	} else if found {
+		return config{}, configPath, err
+	}
+	return cfg, configPath, nil
+}
+
+// resolveOpenRouterAPIKey reads the config before checking the environment.
+// An empty configPath selects the platform's default user config path.
+func resolveOpenRouterAPIKey(configPath string) (string, error) {
+	cfg, path, err := loadConfig(configPath)
+	if err != nil {
+		return "", err
+	}
+	return resolveAPIKey(cfg, path)
+}
+
+func resolveAPIKey(cfg config, configPath string) (string, error) {
+	if apiKey := cfg.OpenRouter.APIKey; apiKey != "" && apiKey != placeholderAPIKey {
 		return resolveAPIKeyValue(apiKey)
 	}
 
@@ -58,6 +75,18 @@ func resolveOpenRouterAPIKey(configPath string) (string, error) {
 	}
 
 	return "", fmt.Errorf("OpenRouter API key not found in %s or OPENROUTER_API_KEY", configPath)
+}
+
+// resolveModel prefers an explicit flag value over the config. There is no
+// built-in default; the installer writes one into new configs.
+func resolveModel(flagModel string, cfg config, configPath string) (string, error) {
+	if model := strings.TrimSpace(flagModel); model != "" {
+		return model, nil
+	}
+	if cfg.OpenRouter.Model != "" {
+		return cfg.OpenRouter.Model, nil
+	}
+	return "", fmt.Errorf("OpenRouter model not set; add openrouter.model to %s or pass --model", configPath)
 }
 
 func resolveAPIKeyValue(value string) (string, error) {
@@ -97,22 +126,22 @@ func readOnePasswordSecret(reference string) (string, error) {
 	return secret, nil
 }
 
-func readConfigAPIKey(path string) (apiKey string, found bool, err error) {
+func readConfig(path string) (config, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return "", false, err
+		return config{}, err
 	}
 	defer file.Close()
 
 	info, err := file.Stat()
 	if err != nil {
-		return "", false, fmt.Errorf("failed to inspect config %s: %w", path, err)
+		return config{}, fmt.Errorf("failed to inspect config %s: %w", path, err)
 	}
 	if !info.Mode().IsRegular() {
-		return "", false, fmt.Errorf("config %s is not a regular file", path)
+		return config{}, fmt.Errorf("config %s is not a regular file", path)
 	}
 	if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
-		return "", false, fmt.Errorf("config %s permissions are too open (%04o); run: chmod 600 %q", path, info.Mode().Perm(), path)
+		return config{}, fmt.Errorf("config %s permissions are too open (%04o); run: chmod 600 %q", path, info.Mode().Perm(), path)
 	}
 
 	decoder := json.NewDecoder(file)
@@ -120,15 +149,16 @@ func readConfigAPIKey(path string) (apiKey string, found bool, err error) {
 
 	var cfg config
 	if err := decoder.Decode(&cfg); err != nil {
-		return "", false, fmt.Errorf("failed to parse config %s: %w", path, err)
+		return config{}, fmt.Errorf("failed to parse config %s: %w", path, err)
 	}
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
 		if err == nil {
-			return "", false, fmt.Errorf("failed to parse config %s: multiple JSON values", path)
+			return config{}, fmt.Errorf("failed to parse config %s: multiple JSON values", path)
 		}
-		return "", false, fmt.Errorf("failed to parse config %s: %w", path, err)
+		return config{}, fmt.Errorf("failed to parse config %s: %w", path, err)
 	}
 
-	apiKey = strings.TrimSpace(cfg.OpenRouter.APIKey)
-	return apiKey, apiKey != "" && apiKey != placeholderAPIKey, nil
+	cfg.OpenRouter.APIKey = strings.TrimSpace(cfg.OpenRouter.APIKey)
+	cfg.OpenRouter.Model = strings.TrimSpace(cfg.OpenRouter.Model)
+	return cfg, nil
 }

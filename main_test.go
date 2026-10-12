@@ -76,7 +76,7 @@ func setupRepo(t *testing.T) {
 func generationConfig(t *testing.T) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "config.json")
-	writeInTest(t, path, `{"openrouter":{"api_key":"test-key"}}`)
+	writeInTest(t, path, `{"openrouter":{"api_key":"test-key","model":"test/model"}}`)
 	return path
 }
 
@@ -87,7 +87,7 @@ func TestHelpOutsideRepository(t *testing.T) {
 		if err := run([]string{arg}, strings.NewReader(""), &stdout, &stderr); err != nil {
 			t.Fatal(err)
 		}
-		for _, want := range []string{"--staged", "--suggest", "--message-file", "--dry-run", "--edit", "--push", "--model", "--config", "--help", "AGENT WORKFLOW", "Example:", defaultModel} {
+		for _, want := range []string{"--staged", "--suggest", "--message-file", "--dry-run", "--edit", "--push", "--model", "--config", "--help", "AGENT WORKFLOW", "Example:", "openrouter.model"} {
 			if !strings.Contains(stdout.String(), want) {
 				t.Errorf("help missing %q", want)
 			}

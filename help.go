@@ -6,7 +6,7 @@ import (
 )
 
 func printHelp(w io.Writer) error {
-	_, err := fmt.Fprintf(w, `commiter — AI commit messages, with a reviewable workflow
+	_, err := fmt.Fprint(w, `commiter — AI commit messages, with a reviewable workflow
 
 USAGE
   c [options]
@@ -65,13 +65,13 @@ OPTIONS AND EXAMPLES
                c --staged --message-file /tmp/commit-message.txt --push
 
   --model <id>
-      Select an OpenRouter model for message generation.
-      Default: %s
+      Select an OpenRouter model for message generation. Overrides
+      openrouter.model in the config. Fails if neither is set.
       Ignored when using --message-file.
-      Example: c --model "%s" --staged --suggest
+      Example: c --model "openrouter/free" --staged --suggest
 
   --config <path>
-      Read OpenRouter credentials from a JSON config file. Default: commiter's
+      Read OpenRouter credentials and model from a JSON config file. Default: commiter's
       config.json inside the platform user config directory; on Linux this is
       $XDG_CONFIG_HOME/commiter/config.json or ~/.config/commiter/config.json.
       Config credentials take precedence over OPENROUTER_API_KEY. An empty or
@@ -99,8 +99,10 @@ AGENT WORKFLOW
      to avoid accidentally including them when staging all changes.
 
 CONFIGURATION
-  Config example: {"openrouter":{"api_key":"your-key-here"}}
+  Config example: {"openrouter":{"api_key":"your-key-here","model":"openrouter/free"}}
   Replace the placeholder with your key, or export OPENROUTER_API_KEY.
+  openrouter.model is required unless --model is passed. The installer sets
+  it to openrouter/free in new configs.
   Unix config files must have private permissions: chmod 600 <config-path>.
   1Password references are supported: {"openrouter":{"api_key":"op://Private/OpenRouter/personal"}}
   References require the installed, authenticated 1Password CLI (op).
@@ -110,6 +112,6 @@ COMBINATIONS AND EXIT STATUS
   --message-file cannot combine with --edit; edit the supplied file first.
   Flags may use --name=value. Boolean flags default to false.
   Exit 0: success/help. Exit 1: invalid options, no changes, or an operation failed.
-`, defaultModel, defaultModel)
+`)
 	return err
 }

@@ -156,3 +156,33 @@ func TestResolveOpenRouterAPIKeyReportsMissingCredential(t *testing.T) {
 		t.Fatalf("got error %v, want missing credential error", err)
 	}
 }
+
+func TestResolveModelPrefersFlagThenConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeTestConfig(t, path, `{"openrouter":{"api_key":"k","model":"openrouter/free"}}`, 0o600)
+
+	cfg, _, err := loadConfig(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := resolveModel("", cfg, path); err != nil || got != "openrouter/free" {
+		t.Fatalf("got %q, want config model", got)
+	}
+	if got, err := resolveModel("other/model", cfg, path); err != nil || got != "other/model" {
+		t.Fatalf("got %q, want flag model", got)
+	}
+}
+
+func TestResolveModelFailsWhenUnset(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	writeTestConfig(t, path, `{"openrouter":{"api_key":"k","model":"  "}}`, 0o600)
+
+	cfg, _, err := loadConfig(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = resolveModel("", cfg, path)
+	if err == nil || !strings.Contains(err.Error(), "OpenRouter model not set") {
+		t.Fatalf("got error %v, want missing model error", err)
+	}
+}

@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-const defaultModel = "google/gemini-2.5-flash-lite"
-
 func main() {
 	if err := run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -20,7 +18,7 @@ func main() {
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) (runErr error) {
 	flags := flag.NewFlagSet("commiter", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
-	model := flags.String("model", defaultModel, "OpenRouter model to use")
+	model := flags.String("model", "", "OpenRouter model to use; overrides config")
 	configPath := flags.String("config", "", "Config file path")
 	pushChanges := flags.Bool("push", false, "Push to remote after committing")
 	staged := flags.Bool("staged", false, "Only use staged changes")

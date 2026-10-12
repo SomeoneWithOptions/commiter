@@ -17,8 +17,18 @@ func generateCommitMessage(diff string, model string) (string, error) {
 	return generateCommitMessageWithConfig(diff, model, "")
 }
 
+// generateCommitMessageWithConfig uses model when non-empty, otherwise the
+// config's openrouter.model.
 func generateCommitMessageWithConfig(diff string, model string, configPath string) (string, error) {
-	apiKey, err := resolveOpenRouterAPIKey(configPath)
+	cfg, path, err := loadConfig(configPath)
+	if err != nil {
+		return "", err
+	}
+	apiKey, err := resolveAPIKey(cfg, path)
+	if err != nil {
+		return "", err
+	}
+	model, err = resolveModel(model, cfg, path)
 	if err != nil {
 		return "", err
 	}

@@ -8,7 +8,7 @@ A Go CLI tool that automates the git commit process. It stages all changes, gene
 curl -fsSL https://go.sanetomore.com/commiter | sh
 ```
 
-This downloads the latest release binary to `~/.local/bin/c` and creates a private config containing a placeholder credential. Existing config is never overwritten.
+This downloads the latest release binary to `~/.local/bin/c` and creates a private config containing a placeholder credential and the `openrouter/free` model. Existing config is never overwritten.
 
 ## Build from Source
 
@@ -66,6 +66,19 @@ go build -o commiter .
    ```
 
    Config takes precedence over `OPENROUTER_API_KEY`. The installer placeholder `your-key-here` is treated as unset, allowing environment fallback.
+
+   Set the OpenRouter model used to generate messages. The installer writes `openrouter/free` into new configs:
+
+   ```json
+   {
+     "openrouter": {
+       "api_key": "your-key-here",
+       "model": "openrouter/free"
+     }
+   }
+   ```
+
+   `--model` overrides the config. There is no built-in default: if neither is set, `commiter` fails with an error. Reinstalling or upgrading never touches an existing config, so configs created before this option must add `model` by hand.
 
 2. Run the tool in your git repository:
 
@@ -175,15 +188,15 @@ c --staged --message-file /tmp/commit-message.txt --push
 
 #### `--model <id>`
 
-Choose the OpenRouter model for generation. Default: `google/gemini-2.5-flash-lite`. Ignored when using `--message-file`.
+Choose the OpenRouter model for generation. Overrides `openrouter.model` from the config. Fails if neither is set. Ignored when using `--message-file`.
 
 ```bash
-c --model "google/gemini-2.5-flash-lite" --staged --suggest
+c --model "openrouter/free" --staged --suggest
 ```
 
 #### `--config <path>`
 
-Choose a different JSON config file. By default, use `commiter/config.json` inside the platform user config directory: on Linux, `$XDG_CONFIG_HOME/commiter/config.json` when set, otherwise `~/.config/commiter/config.json`.
+Choose a different JSON config file for the API key and model. By default, use `commiter/config.json` inside the platform user config directory: on Linux, `$XDG_CONFIG_HOME/commiter/config.json` when set, otherwise `~/.config/commiter/config.json`.
 
 Config credentials take precedence over `OPENROUTER_API_KEY`; empty or placeholder credentials fall back to the environment. An explicitly supplied missing or invalid config fails. Unix config files must have private permissions (`chmod 600`). Literal keys and `op://` 1Password references are supported, as described above. Ignored when using `--message-file`.
 
